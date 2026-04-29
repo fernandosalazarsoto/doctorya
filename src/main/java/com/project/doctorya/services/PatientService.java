@@ -47,6 +47,10 @@ public class PatientService {
         return mapper.map(patients, listType);
     }
 
+    public long count() {
+        return patientRepository.count();
+    }
+
     public Patient getById(UUID id) {
         PatientEntity patientExist = patientRepository.findById(id)
                 .orElseThrow(() -> new EntityNotExistsException(Constants.patientNotFound));

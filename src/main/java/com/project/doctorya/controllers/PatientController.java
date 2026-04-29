@@ -102,5 +102,14 @@ public class PatientController {
     public void delete(@PathVariable UUID id) {
         patientService.delete(id);
     }
+    @Operation(summary = "Get the total number of registered patients")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved patient count")
+    })
+    @GetMapping("/count")
+    public ResponseEntity<Long> count() {
+        long count = patientService.count();
+        return ResponseEntity.ok(count);
+    }
 
 }

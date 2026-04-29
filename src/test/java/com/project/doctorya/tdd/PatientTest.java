@@ -2,6 +2,7 @@ package com.project.doctorya.tdd;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -13,8 +14,11 @@ import com.project.doctorya.dtos.PatientDto;
 import com.project.doctorya.models.Patient;
 import com.project.doctorya.services.PatientService;
 
+//TDD (Test-Driven Development)
+
 @SpringBootTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@org.springframework.test.annotation.DirtiesContext(classMode = org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_CLASS)
 public class PatientTest {
     @Autowired
     PatientService patientService;
@@ -42,29 +46,49 @@ public class PatientTest {
 
     @Test
     @Order(3)
-    void testGetById() throws Exception{
+    void testGetById() throws Exception {
         Patient patient = patientService.getByIdentification("1053847610");
         Patient patient2 = patientService.getById(patient.getId());
         assertEquals(patient.getIdentification(), patient2.getIdentification());
         assertEquals(patient.getId(), patient2.getId());
     }
 
-    @Test
-    @Order(4)
-    void testUpdatePatient() throws Exception{
+    @Test // Esta etiqueta le dice a Spring que ejecute esto como una prueba TDD
+    @Order(4) // Orden de paso (1. creo, 2. consulto, 3. consulto ID, 4. actualizo)
+    void testUpdatePatient() throws Exception {
+
+        // 1. OBTENER: Buscamos un paciente que ya estaba creado de antes (Preparación)
         Patient patient = patientService.getByIdentification("1053847610");
+
+        // 2. PREPARAR CAJA DE DATOS: DTO con información nueva (nuevo nombre)
         PatientDto patientDto = new PatientDto();
-        patientDto.setName("Test Name");
+        patientDto.setName("Test Name"); // Simulamos cambiar el nombre
+
+        // 3. ACTUAR (Act): Mandamos al servicio nativo de Java a que actualice al
+        // paciente
         Patient patientUpdate = patientService.update(patientDto, patient.getId());
-        assertNotNull(patientUpdate);
-        assertEquals(patientDto.getName(), patientUpdate.getName());
+
+        // 4. ASEGURAR (Assertions): Aquí es donde ocurre la VERDADERA PRUEBA.
+        // Si el resultado no coincide con la expectativa, la prueba estallará en rojo.
+        assertNotNull(patientUpdate); // ¿El servicio devolvió un objeto válido o falló?
+        assertEquals(patientDto.getName(), patientUpdate.getName()); // ¿Realmente se aplicó el cambio en el nombre?
     }
 
-    /*@Test
+    @Test
     @Order(5)
-    void testDeletePatient() throws Exception{
-        Patient patient = patientService.getByIdentification("1053847610");
-        patientService.delete(patient.getId());
+    void testCountPatients() throws Exception {
+        long count = patientService.count();
+        assertTrue(count > 0, "The count should be greater than 0 since we created a patient previously");
+    }
 
-    }*/
+    /*
+     * @Test
+     * 
+     * @Order(5)
+     * void testDeletePatient() throws Exception{
+     * Patient patient = patientService.getByIdentification("1053847610");
+     * patientService.delete(patient.getId());
+     * 
+     * }
+     */
 }
