@@ -6,6 +6,7 @@ Aplicación web estática para simular el TCO de compra desde España comparando
 
 - Usuarios independientes por producto.
 - Tarifas mensuales en USD capturadas desde fuentes oficiales.
+- Facturación de licencias anual o mensual, con precios diferenciados por fuente.
 - Tipo de cambio USD/EUR editable.
 - IVA España y contingencia como porcentajes.
 - Periodo de cálculo editable, con 12 meses por defecto.

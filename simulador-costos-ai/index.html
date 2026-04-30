@@ -30,6 +30,20 @@
 
           <p class="source-note">Tarifas capturadas de fuentes oficiales el <strong id="source-date"></strong>. No son editables en el simulador.</p>
 
+          <fieldset class="compact-fieldset">
+            <legend>Facturación de licencias</legend>
+            <div class="billing-toggle" role="radiogroup" aria-label="Facturación de licencias">
+              <label>
+                <input type="radio" name="billingCycle" value="annual" checked>
+                <span>Anual</span>
+              </label>
+              <label>
+                <input type="radio" name="billingCycle" value="monthly">
+                <span>Mensual</span>
+              </label>
+            </div>
+          </fieldset>
+
           <div class="input-table-shell">
             <table class="input-table">
               <thead>

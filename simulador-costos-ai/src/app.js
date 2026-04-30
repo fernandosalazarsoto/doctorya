@@ -1,4 +1,5 @@
 import {
+  BILLING_CYCLES,
   DEFAULT_INPUTS,
   PRODUCT_DEFINITIONS,
   RESULT_VIEWS,
@@ -24,6 +25,7 @@ const sourceDate = document.querySelector("#source-date");
 const resetButton = document.querySelector("#reset");
 const exportButton = document.querySelector("#export-json");
 const viewInputs = document.querySelectorAll("input[name='resultView']");
+const billingInputs = document.querySelectorAll("input[name='billingCycle']");
 let resultView = RESULT_VIEWS.annual;
 
 const moneyUsd = new Intl.NumberFormat("en-US", {
@@ -87,6 +89,7 @@ function writeInputs() {
   form.elements.vatRate.value = state.vatRate * 100;
   form.elements.contingencyRate.value = state.contingencyRate * 100;
   form.elements.periodMonths.value = state.periodMonths;
+  document.querySelector(`input[name='billingCycle'][value='${state.billingCycle}']`).checked = true;
 }
 
 function readInputs() {
@@ -98,6 +101,7 @@ function readInputs() {
   state.vatRate = normalizePercent(readNumber("vatRate"));
   state.contingencyRate = normalizePercent(readNumber("contingencyRate"));
   state.periodMonths = readNumber("periodMonths");
+  state.billingCycle = document.querySelector("input[name='billingCycle']:checked")?.value ?? BILLING_CYCLES.annual;
   resultView = document.querySelector("input[name='resultView']:checked")?.value ?? RESULT_VIEWS.annual;
 }
 
@@ -105,16 +109,29 @@ function renderProductInputs() {
   productInputsBody.innerHTML = PRODUCT_DEFINITIONS.map((product) => `
     <tr>
       <th scope="row">${product.name}</th>
-      <td>
+      <td data-label="Usuarios">
         <input name="${product.key}Users" type="number" min="0" step="1" inputmode="numeric" aria-label="Usuarios ${product.name}">
       </td>
-      <td>${moneyUsd.format(PRICE_CATALOG[product.key].monthlyPriceUsd)}</td>
-      <td>
+      <td data-label="Tarifa" data-price-cell="${product.key}"></td>
+      <td data-label="Fuente">
         <a href="${PRICE_CATALOG[product.key].sourceUrl}" target="_blank" rel="noreferrer">${PRICE_CATALOG[product.key].sourceName}</a>
         <span>${PRICE_CATALOG[product.key].billingBasis}</span>
       </td>
     </tr>
   `).join("");
+}
+
+function renderTariffCells() {
+  for (const product of PRODUCT_DEFINITIONS) {
+    const price = PRICE_CATALOG[product.key].pricesUsdPerMonth[state.billingCycle];
+    const cell = document.querySelector(`[data-price-cell="${product.key}"]`);
+    if (cell) {
+      cell.innerHTML = `
+        <strong>${moneyUsd.format(price)}</strong>
+        <span>${state.billingCycle === BILLING_CYCLES.annual ? "fact. anual" : "fact. mensual"}</span>
+      `;
+    }
+  }
 }
 
 function signedMoney(value) {
@@ -314,6 +331,7 @@ function renderValidation(validation) {
 function render() {
   readInputs();
   const model = buildTcoModel(state);
+  renderTariffCells();
   renderValidation(model.validation);
   renderSummary(model);
   renderCharts(model);
@@ -346,6 +364,9 @@ render();
 form.addEventListener("input", render);
 form.addEventListener("change", render);
 for (const input of viewInputs) {
+  input.addEventListener("change", render);
+}
+for (const input of billingInputs) {
   input.addEventListener("change", render);
 }
 resetButton.addEventListener("click", () => {

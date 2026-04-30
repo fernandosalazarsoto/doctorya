@@ -192,6 +192,11 @@ fieldset {
   background: rgba(255, 255, 255, 0.72);
 }
 
+.compact-fieldset {
+  margin: 0 0 14px;
+  padding: 14px;
+}
+
 legend {
   padding: 0 8px;
   color: var(--brand-purple);
@@ -247,9 +252,9 @@ button:focus {
   margin-bottom: 12px;
 }
 
-.view-toggle {
+.view-toggle,
+.billing-toggle {
   display: inline-grid;
-  grid-template-columns: repeat(3, minmax(82px, 1fr));
   gap: 4px;
   padding: 4px;
   border: 1px solid var(--line);
@@ -258,7 +263,16 @@ button:focus {
   box-shadow: 0 8px 22px rgba(20, 35, 72, 0.08);
 }
 
-.view-toggle label {
+.view-toggle {
+  grid-template-columns: repeat(3, minmax(82px, 1fr));
+}
+
+.billing-toggle {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.view-toggle label,
+.billing-toggle label {
   display: block;
   color: var(--muted);
   font-size: 0.82rem;
@@ -267,21 +281,24 @@ button:focus {
   cursor: pointer;
 }
 
-.view-toggle input {
+.view-toggle input,
+.billing-toggle input {
   position: absolute;
   inline-size: 1px;
   block-size: 1px;
   opacity: 0;
 }
 
-.view-toggle span {
+.view-toggle span,
+.billing-toggle span {
   display: block;
   min-height: 32px;
   border-radius: 6px;
   padding: 7px 10px;
 }
 
-.view-toggle input:checked + span {
+.view-toggle input:checked + span,
+.billing-toggle input:checked + span {
   background: linear-gradient(135deg, var(--accent-strong), var(--brand-purple));
   color: #fff;
 }
@@ -563,6 +580,17 @@ thead th:first-child {
   font-weight: 850;
 }
 
+.input-table td:nth-child(3) strong,
+.input-table td:nth-child(3) span {
+  display: block;
+}
+
+.input-table td:nth-child(3) span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
 .input-table th:nth-child(4),
 .input-table td:nth-child(4) {
   width: 30%;
@@ -667,5 +695,61 @@ tbody tr:hover {
   .compare-row,
   .difference-cards {
     grid-template-columns: 1fr;
+  }
+
+  .input-table,
+  .input-table thead,
+  .input-table tbody,
+  .input-table tr,
+  .input-table th,
+  .input-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .input-table thead {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    clip: rect(0 0 0 0);
+  }
+
+  .input-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(92px, 0.55fr);
+    gap: 8px 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .input-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .input-table tbody th {
+    grid-column: 1 / -1;
+    font-size: 0.98rem;
+  }
+
+  .input-table tbody td {
+    border-bottom: 0;
+    padding: 0;
+    text-align: left;
+    white-space: normal;
+  }
+
+  .input-table tbody td::before {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    content: attr(data-label);
+  }
+
+  .input-table tbody td:nth-child(4) {
+    grid-column: 1 / -1;
   }
 }

@@ -42,13 +42,19 @@ export const DEFAULT_INPUTS = {
   usdEurRate: 0.93,
   vatRate: 0.21,
   contingencyRate: 0,
-  periodMonths: 12
+  periodMonths: 12,
+  billingCycle: "annual"
 };
 
 export const RESULT_VIEWS = {
   monthly: "monthly",
   annual: "annual",
   both: "both"
+};
+
+export const BILLING_CYCLES = {
+  annual: "annual",
+  monthly: "monthly"
 };
 
 export function normalizePercent(value) {
@@ -98,7 +104,10 @@ export function calculateProductTco(inputs, productDefinition) {
   const product = inputs.products[productDefinition.key] ?? {};
   const priceSource = PRICE_CATALOG[productDefinition.key];
   const users = sanitizeNonNegative(product.users);
-  const monthlyPriceUsd = sanitizeNonNegative(priceSource?.monthlyPriceUsd);
+  const billingCycle = Object.values(BILLING_CYCLES).includes(inputs.billingCycle)
+    ? inputs.billingCycle
+    : BILLING_CYCLES.annual;
+  const monthlyPriceUsd = sanitizeNonNegative(priceSource?.pricesUsdPerMonth?.[billingCycle]);
   const monthlyUsdNoVat = roundCurrency(users * monthlyPriceUsd);
   const monthly = calculateCostWindow(monthlyUsdNoVat, 1, inputs);
   const annual = calculateCostWindow(monthlyUsdNoVat, 12, inputs);
@@ -107,6 +116,7 @@ export function calculateProductTco(inputs, productDefinition) {
   return {
     ...productDefinition,
     users,
+    billingCycle,
     monthlyPriceUsd,
     priceSource,
     monthlyUsdNoVat,
@@ -253,6 +263,9 @@ export function validateInputs(inputs) {
   }
   if (!Number.isFinite(Number(inputs.periodMonths)) || Number(inputs.periodMonths) <= 0) {
     errors.push("El periodo de calculo debe ser mayor que cero.");
+  }
+  if (!Object.values(BILLING_CYCLES).includes(inputs.billingCycle)) {
+    errors.push("La facturacion de licencias debe ser anual o mensual.");
   }
 
   return {

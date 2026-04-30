@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {
+  BILLING_CYCLES,
   DEFAULT_INPUTS,
   PRODUCT_KEYS,
   buildTcoModel
@@ -63,6 +64,15 @@ attemptedManualPrice.products[PRODUCT_KEYS.claudePremium].monthlyPriceUsd = 1;
 const sourcePriced = buildTcoModel(attemptedManualPrice);
 const premium = sourcePriced.productRows.find((row) => row.key === PRODUCT_KEYS.claudePremium);
 assert.equal(premium.monthlyPriceUsd, 100);
+
+const monthlyBilling = structuredClone(DEFAULT_INPUTS);
+monthlyBilling.billingCycle = BILLING_CYCLES.monthly;
+const monthlyModel = buildTcoModel(monthlyBilling);
+const monthlyChatgpt = monthlyModel.productRows.find((row) => row.key === PRODUCT_KEYS.chatgptBusiness);
+const monthlyPremium = monthlyModel.productRows.find((row) => row.key === PRODUCT_KEYS.claudePremium);
+assert.equal(monthlyChatgpt.monthlyPriceUsd, 25);
+assert.equal(monthlyPremium.monthlyPriceUsd, 125);
+assert.equal(monthlyModel.globalTotal.annualTotalEurWithVat, 11815.65);
 
 const invalidRate = structuredClone(DEFAULT_INPUTS);
 invalidRate.usdEurRate = 0;
