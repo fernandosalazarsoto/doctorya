@@ -45,6 +45,12 @@ export const DEFAULT_INPUTS = {
   periodMonths: 12
 };
 
+export const RESULT_VIEWS = {
+  monthly: "monthly",
+  annual: "annual",
+  both: "both"
+};
+
 export function normalizePercent(value) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return 0;
@@ -67,23 +73,36 @@ export function roundCurrency(value) {
   return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 }
 
+export function calculateCostWindow(monthlyUsdNoVat, months, inputs) {
+  const usdEurRate = sanitizePositive(inputs.usdEurRate, 0);
+  const vatRate = normalizePercent(inputs.vatRate);
+  const contingencyRate = normalizePercent(inputs.contingencyRate);
+  const usdNoVat = roundCurrency(monthlyUsdNoVat * months);
+  const eurNoVat = roundCurrency(usdNoVat * usdEurRate);
+  const contingencyEur = roundCurrency(eurNoVat * contingencyRate);
+  const subtotalEur = roundCurrency(eurNoVat + contingencyEur);
+  const vatEur = roundCurrency(subtotalEur * vatRate);
+  const totalEurWithVat = roundCurrency(subtotalEur + vatEur);
+
+  return {
+    usdNoVat,
+    eurNoVat,
+    contingencyEur,
+    subtotalEur,
+    vatEur,
+    totalEurWithVat
+  };
+}
+
 export function calculateProductTco(inputs, productDefinition) {
   const product = inputs.products[productDefinition.key] ?? {};
   const priceSource = PRICE_CATALOG[productDefinition.key];
   const users = sanitizeNonNegative(product.users);
   const monthlyPriceUsd = sanitizeNonNegative(priceSource?.monthlyPriceUsd);
-  const periodMonths = sanitizePositive(inputs.periodMonths, 0);
-  const usdEurRate = sanitizePositive(inputs.usdEurRate, 0);
-  const vatRate = normalizePercent(inputs.vatRate);
-  const contingencyRate = normalizePercent(inputs.contingencyRate);
-
   const monthlyUsdNoVat = roundCurrency(users * monthlyPriceUsd);
-  const periodUsdNoVat = roundCurrency(monthlyUsdNoVat * periodMonths);
-  const periodEurNoVat = roundCurrency(periodUsdNoVat * usdEurRate);
-  const contingencyEur = roundCurrency(periodEurNoVat * contingencyRate);
-  const subtotalEur = roundCurrency(periodEurNoVat + contingencyEur);
-  const vatEur = roundCurrency(subtotalEur * vatRate);
-  const totalEurWithVat = roundCurrency(subtotalEur + vatEur);
+  const monthly = calculateCostWindow(monthlyUsdNoVat, 1, inputs);
+  const annual = calculateCostWindow(monthlyUsdNoVat, 12, inputs);
+  const period = calculateCostWindow(monthlyUsdNoVat, sanitizePositive(inputs.periodMonths, 0), inputs);
 
   return {
     ...productDefinition,
@@ -91,12 +110,23 @@ export function calculateProductTco(inputs, productDefinition) {
     monthlyPriceUsd,
     priceSource,
     monthlyUsdNoVat,
-    periodUsdNoVat,
-    periodEurNoVat,
-    contingencyEur,
-    subtotalEur,
-    vatEur,
-    totalEurWithVat
+    monthlyEurNoVat: monthly.eurNoVat,
+    monthlyContingencyEur: monthly.contingencyEur,
+    monthlySubtotalEur: monthly.subtotalEur,
+    monthlyVatEur: monthly.vatEur,
+    monthlyTotalEurWithVat: monthly.totalEurWithVat,
+    annualUsdNoVat: annual.usdNoVat,
+    annualEurNoVat: annual.eurNoVat,
+    annualContingencyEur: annual.contingencyEur,
+    annualSubtotalEur: annual.subtotalEur,
+    annualVatEur: annual.vatEur,
+    annualTotalEurWithVat: annual.totalEurWithVat,
+    periodUsdNoVat: period.usdNoVat,
+    periodEurNoVat: period.eurNoVat,
+    contingencyEur: period.contingencyEur,
+    subtotalEur: period.subtotalEur,
+    vatEur: period.vatEur,
+    totalEurWithVat: period.totalEurWithVat
   };
 }
 
@@ -106,6 +136,17 @@ export function sumRows(rows, key, name, shortName = name) {
       ...total,
       users: total.users + row.users,
       monthlyUsdNoVat: roundCurrency(total.monthlyUsdNoVat + row.monthlyUsdNoVat),
+      monthlyEurNoVat: roundCurrency(total.monthlyEurNoVat + row.monthlyEurNoVat),
+      monthlyContingencyEur: roundCurrency(total.monthlyContingencyEur + row.monthlyContingencyEur),
+      monthlySubtotalEur: roundCurrency(total.monthlySubtotalEur + row.monthlySubtotalEur),
+      monthlyVatEur: roundCurrency(total.monthlyVatEur + row.monthlyVatEur),
+      monthlyTotalEurWithVat: roundCurrency(total.monthlyTotalEurWithVat + row.monthlyTotalEurWithVat),
+      annualUsdNoVat: roundCurrency(total.annualUsdNoVat + row.annualUsdNoVat),
+      annualEurNoVat: roundCurrency(total.annualEurNoVat + row.annualEurNoVat),
+      annualContingencyEur: roundCurrency(total.annualContingencyEur + row.annualContingencyEur),
+      annualSubtotalEur: roundCurrency(total.annualSubtotalEur + row.annualSubtotalEur),
+      annualVatEur: roundCurrency(total.annualVatEur + row.annualVatEur),
+      annualTotalEurWithVat: roundCurrency(total.annualTotalEurWithVat + row.annualTotalEurWithVat),
       periodUsdNoVat: roundCurrency(total.periodUsdNoVat + row.periodUsdNoVat),
       periodEurNoVat: roundCurrency(total.periodEurNoVat + row.periodEurNoVat),
       contingencyEur: roundCurrency(total.contingencyEur + row.contingencyEur),
@@ -121,6 +162,17 @@ export function sumRows(rows, key, name, shortName = name) {
       users: 0,
       monthlyPriceUsd: null,
       monthlyUsdNoVat: 0,
+      monthlyEurNoVat: 0,
+      monthlyContingencyEur: 0,
+      monthlySubtotalEur: 0,
+      monthlyVatEur: 0,
+      monthlyTotalEurWithVat: 0,
+      annualUsdNoVat: 0,
+      annualEurNoVat: 0,
+      annualContingencyEur: 0,
+      annualSubtotalEur: 0,
+      annualVatEur: 0,
+      annualTotalEurWithVat: 0,
       periodUsdNoVat: 0,
       periodEurNoVat: 0,
       contingencyEur: 0,
@@ -137,7 +189,9 @@ export function buildTcoModel(inputs) {
   const claudeProducts = productRows.filter((row) => row.group === "Claude Team");
   const claudeTotal = sumRows(claudeProducts, "claudeTeamTotal", "Total Claude Team");
   const globalTotal = sumRows(productRows, "globalTotal", "Total global");
-  const costDifferenceEur = roundCurrency(claudeTotal.totalEurWithVat - chatgpt.totalEurWithVat);
+  const monthlyClaudeVsChatgptEur = roundCurrency(claudeTotal.monthlyTotalEurWithVat - chatgpt.monthlyTotalEurWithVat);
+  const annualClaudeVsChatgptEur = roundCurrency(claudeTotal.annualTotalEurWithVat - chatgpt.annualTotalEurWithVat);
+  const periodClaudeVsChatgptEur = roundCurrency(claudeTotal.totalEurWithVat - chatgpt.totalEurWithVat);
   const topProduct = productRows.reduce((winner, row) => (
     row.totalEurWithVat > winner.totalEurWithVat ? row : winner
   ), productRows[0]);
@@ -156,10 +210,19 @@ export function buildTcoModel(inputs) {
       claudePremiumUsers: inputs.products[PRODUCT_KEYS.claudePremium]?.users ?? 0,
       claudeTeamUsers: claudeTotal.users,
       globalUsers: globalTotal.users,
+      monthlyTcoNoVatEur: globalTotal.monthlySubtotalEur,
+      monthlyTcoWithVatEur: globalTotal.monthlyTotalEurWithVat,
+      annualTcoNoVatEur: globalTotal.annualSubtotalEur,
+      annualTcoWithVatEur: globalTotal.annualTotalEurWithVat,
       tcoNoVatEur: globalTotal.subtotalEur,
       tcoWithVatEur: globalTotal.totalEurWithVat,
-      costDifferenceEur,
-      costDifferenceLabel: costDifferenceEur >= 0
+      monthlyClaudeVsChatgptEur,
+      monthlyChatgptVsClaudeEur: roundCurrency(-monthlyClaudeVsChatgptEur),
+      annualClaudeVsChatgptEur,
+      annualChatgptVsClaudeEur: roundCurrency(-annualClaudeVsChatgptEur),
+      costDifferenceEur: periodClaudeVsChatgptEur,
+      inverseCostDifferenceEur: roundCurrency(-periodClaudeVsChatgptEur),
+      costDifferenceLabel: periodClaudeVsChatgptEur >= 0
         ? "Claude Team cuesta mas que ChatGPT Business"
         : "ChatGPT Business cuesta mas que Claude Team",
       topProductName: topProduct.name,

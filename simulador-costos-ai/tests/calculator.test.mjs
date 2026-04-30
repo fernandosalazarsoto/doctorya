@@ -13,10 +13,13 @@ const claudeStandard = model.productRows.find((row) => row.key === PRODUCT_KEYS.
 const claudePremium = model.productRows.find((row) => row.key === PRODUCT_KEYS.claudePremium);
 
 assert.equal(chatgpt.monthlyUsdNoVat, 400);
+assert.equal(chatgpt.monthlyEurNoVat, 372);
+assert.equal(chatgpt.monthlyTotalEurWithVat, 450.12);
 assert.equal(chatgpt.periodUsdNoVat, 4800);
 assert.equal(chatgpt.periodEurNoVat, 4464);
 assert.equal(chatgpt.vatEur, 937.44);
 assert.equal(chatgpt.totalEurWithVat, 5401.44);
+assert.equal(chatgpt.annualTotalEurWithVat, 5401.44);
 
 assert.equal(claudeStandard.monthlyUsdNoVat, 100);
 assert.equal(claudeStandard.periodUsdNoVat, 1200);
@@ -29,9 +32,15 @@ assert.equal(claudePremium.totalEurWithVat, 2700.72);
 assert.equal(model.claudeTotal.users, 7);
 assert.equal(model.claudeTotal.totalEurWithVat, 4051.08);
 assert.equal(model.globalTotal.users, 27);
+assert.equal(model.globalTotal.monthlySubtotalEur, 651);
+assert.equal(model.globalTotal.monthlyTotalEurWithVat, 787.71);
 assert.equal(model.globalTotal.subtotalEur, 7812);
 assert.equal(model.globalTotal.totalEurWithVat, 9452.52);
 assert.equal(model.summary.costDifferenceEur, -1350.36);
+assert.equal(model.summary.inverseCostDifferenceEur, 1350.36);
+assert.equal(model.summary.monthlyClaudeVsChatgptEur, -112.53);
+assert.equal(model.summary.monthlyChatgptVsClaudeEur, 112.53);
+assert.equal(model.summary.annualTcoWithVatEur, 9452.52);
 assert.equal(model.summary.topProductName, "ChatGPT Business");
 
 const withAdjustments = structuredClone(DEFAULT_INPUTS);

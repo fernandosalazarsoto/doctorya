@@ -1,6 +1,7 @@
 import {
   DEFAULT_INPUTS,
   PRODUCT_DEFINITIONS,
+  RESULT_VIEWS,
   buildTcoModel,
   normalizePercent,
   sanitizeNonNegative
@@ -13,12 +14,17 @@ const form = document.querySelector("#simulator-form");
 const productInputsBody = document.querySelector("#product-inputs-body");
 const summaryGrid = document.querySelector("#summary-grid");
 const kpiStrip = document.querySelector("#kpi-strip");
+const productChart = document.querySelector("#product-chart");
+const differenceChart = document.querySelector("#difference-chart");
+const chartPeriodLabel = document.querySelector("#chart-period-label");
 const productResultsBody = document.querySelector("#product-results-body");
 const totalsBody = document.querySelector("#totals-body");
 const validationPanel = document.querySelector("#validation-panel");
 const sourceDate = document.querySelector("#source-date");
 const resetButton = document.querySelector("#reset");
 const exportButton = document.querySelector("#export-json");
+const viewInputs = document.querySelectorAll("input[name='resultView']");
+let resultView = RESULT_VIEWS.annual;
 
 const moneyUsd = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -37,6 +43,33 @@ const percent = new Intl.NumberFormat("es-ES", {
   style: "percent",
   maximumFractionDigits: 1
 });
+
+const VIEW_CONFIG = {
+  [RESULT_VIEWS.monthly]: {
+    label: "mensual",
+    title: "Mensual",
+    noVatKey: "monthlySubtotalEur",
+    withVatKey: "monthlyTotalEurWithVat",
+    usdKey: "monthlyUsdNoVat",
+    eurKey: "monthlyEurNoVat",
+    contingencyKey: "monthlyContingencyEur",
+    vatKey: "monthlyVatEur",
+    claudeDiffKey: "monthlyClaudeVsChatgptEur",
+    inverseDiffKey: "monthlyChatgptVsClaudeEur"
+  },
+  [RESULT_VIEWS.annual]: {
+    label: "anual",
+    title: "Anual",
+    noVatKey: "annualSubtotalEur",
+    withVatKey: "annualTotalEurWithVat",
+    usdKey: "annualUsdNoVat",
+    eurKey: "annualEurNoVat",
+    contingencyKey: "annualContingencyEur",
+    vatKey: "annualVatEur",
+    claudeDiffKey: "annualClaudeVsChatgptEur",
+    inverseDiffKey: "annualChatgptVsClaudeEur"
+  }
+};
 
 function readNumber(name) {
   const raw = form.elements[name]?.value;
@@ -65,6 +98,7 @@ function readInputs() {
   state.vatRate = normalizePercent(readNumber("vatRate"));
   state.contingencyRate = normalizePercent(readNumber("contingencyRate"));
   state.periodMonths = readNumber("periodMonths");
+  resultView = document.querySelector("input[name='resultView']:checked")?.value ?? RESULT_VIEWS.annual;
 }
 
 function renderProductInputs() {
@@ -83,27 +117,57 @@ function renderProductInputs() {
   `).join("");
 }
 
-function renderSummary(model) {
-  const summary = model.summary;
-  const differenceSign = summary.costDifferenceEur >= 0 ? "+" : "";
+function signedMoney(value) {
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${moneyEur.format(value)}`;
+}
 
-  kpiStrip.innerHTML = `
+function buildKpis(model) {
+  const summary = model.summary;
+  const cards = [];
+  const appendCards = (view) => {
+    const config = VIEW_CONFIG[view];
+    cards.push(`
+      <article>
+        <span>TCO ${config.label} sin IVA</span>
+        <strong>${moneyEur.format(model.globalTotal[config.noVatKey])}</strong>
+        <small>Incluye contingencia ${percent.format(state.contingencyRate)}</small>
+      </article>
+      <article>
+        <span>TCO ${config.label} con IVA</span>
+        <strong>${moneyEur.format(model.globalTotal[config.withVatKey])}</strong>
+        <small>IVA España ${percent.format(state.vatRate)}</small>
+      </article>
+    `);
+  };
+
+  if (resultView === RESULT_VIEWS.both) {
+    appendCards(RESULT_VIEWS.monthly);
+    appendCards(RESULT_VIEWS.annual);
+    return cards.join("");
+  }
+
+  const config = VIEW_CONFIG[resultView];
+  appendCards(resultView);
+  cards.push(`
     <article>
-      <span>TCO sin IVA</span>
-      <strong>${moneyEur.format(summary.tcoNoVatEur)}</strong>
-      <small>${state.periodMonths} meses, incluye contingencia</small>
-    </article>
-    <article>
-      <span>TCO con IVA</span>
-      <strong>${moneyEur.format(summary.tcoWithVatEur)}</strong>
-      <small>IVA España ${percent.format(state.vatRate)}</small>
-    </article>
-    <article>
-      <span>Diferencia Claude vs ChatGPT</span>
-      <strong>${differenceSign}${moneyEur.format(summary.costDifferenceEur)}</strong>
+      <span>Claude vs ChatGPT ${config.label}</span>
+      <strong>${signedMoney(summary[config.claudeDiffKey])}</strong>
       <small>${summary.costDifferenceLabel}</small>
     </article>
-  `;
+    <article>
+      <span>ChatGPT vs Claude ${config.label}</span>
+      <strong>${signedMoney(summary[config.inverseDiffKey])}</strong>
+      <small>Lectura inversa de la misma brecha</small>
+    </article>
+  `);
+
+  return cards.join("");
+}
+
+function renderSummary(model) {
+  const summary = model.summary;
+  kpiStrip.innerHTML = buildKpis(model);
 
   summaryGrid.innerHTML = `
     <article class="summary-card">
@@ -134,18 +198,92 @@ function renderSummary(model) {
   `;
 }
 
+function metricForCharts() {
+  return resultView === RESULT_VIEWS.monthly ? RESULT_VIEWS.monthly : RESULT_VIEWS.annual;
+}
+
+function renderCharts(model) {
+  const view = metricForCharts();
+  const config = VIEW_CONFIG[view];
+  const maxProductValue = Math.max(...model.productRows.map((row) => row[config.withVatKey]), 1);
+  chartPeriodLabel.textContent = `Vista ${config.label}`;
+
+  productChart.innerHTML = model.productRows.map((row) => {
+    const value = row[config.withVatKey];
+    const share = model.globalTotal[config.withVatKey] === 0 ? 0 : value / model.globalTotal[config.withVatKey];
+    const width = Math.max(2, (value / maxProductValue) * 100);
+    return `
+      <div class="bar-row">
+        <div>
+          <strong>${row.shortName}</strong>
+          <span>${percent.format(share)}</span>
+        </div>
+        <div class="bar-track" aria-hidden="true"><span style="width: ${width}%"></span></div>
+        <em>${moneyEur.format(value)}</em>
+      </div>
+    `;
+  }).join("");
+
+  const chatgpt = model.productRows.find((row) => row.key === "chatgptBusiness");
+  const claudeValue = model.claudeTotal[config.withVatKey];
+  const chatgptValue = chatgpt[config.withVatKey];
+  const maxComparison = Math.max(claudeValue, chatgptValue, 1);
+
+  differenceChart.innerHTML = `
+    <div class="compare-bars">
+      <div class="compare-row">
+        <span>Claude Team</span>
+        <div class="bar-track"><span style="width: ${(claudeValue / maxComparison) * 100}%"></span></div>
+        <strong>${moneyEur.format(claudeValue)}</strong>
+      </div>
+      <div class="compare-row">
+        <span>ChatGPT Business</span>
+        <div class="bar-track alt"><span style="width: ${(chatgptValue / maxComparison) * 100}%"></span></div>
+        <strong>${moneyEur.format(chatgptValue)}</strong>
+      </div>
+    </div>
+    <div class="difference-cards">
+      <div>
+        <span>Claude vs ChatGPT</span>
+        <strong>${signedMoney(model.summary[config.claudeDiffKey])}</strong>
+      </div>
+      <div>
+        <span>ChatGPT vs Claude</span>
+        <strong>${signedMoney(model.summary[config.inverseDiffKey])}</strong>
+      </div>
+    </div>
+  `;
+}
+
+function detailViews() {
+  return resultView === RESULT_VIEWS.both
+    ? [RESULT_VIEWS.monthly, RESULT_VIEWS.annual]
+    : [resultView];
+}
+
+function formatMetricList(row, key) {
+  return detailViews()
+    .map((view) => `${VIEW_CONFIG[view].title}: ${moneyEur.format(row[VIEW_CONFIG[view][key]])}`)
+    .join("<br>");
+}
+
+function formatUsdList(row) {
+  return detailViews()
+    .map((view) => `${VIEW_CONFIG[view].title}: ${moneyUsd.format(row[VIEW_CONFIG[view].usdKey])}`)
+    .join("<br>");
+}
+
 function renderProductResults(rows) {
   productResultsBody.innerHTML = rows.map((row) => `
     <tr>
       <th scope="row">${row.name}</th>
       <td>${numberFormat.format(row.users)}</td>
-      <td>${moneyUsd.format(row.monthlyUsdNoVat)}</td>
-      <td>${moneyUsd.format(row.periodUsdNoVat)}</td>
-      <td>${moneyEur.format(row.periodEurNoVat)}</td>
-      <td>${moneyEur.format(row.contingencyEur)}</td>
-      <td>${moneyEur.format(row.subtotalEur)}</td>
-      <td>${moneyEur.format(row.vatEur)}</td>
-      <td>${moneyEur.format(row.totalEurWithVat)}</td>
+      <td>${formatUsdList(row)}</td>
+      <td>${formatMetricList(row, "eurKey")}</td>
+      <td>${formatMetricList(row, "contingencyKey")}</td>
+      <td>${formatMetricList(row, "noVatKey")}</td>
+      <td>${formatMetricList(row, "vatKey")}</td>
+      <td>${formatMetricList(row, "withVatKey")}</td>
     </tr>
   `).join("");
 }
@@ -156,13 +294,12 @@ function renderTotals(model) {
     <tr>
       <th scope="row">${row.name}</th>
       <td>${numberFormat.format(row.users)}</td>
-      <td>${moneyUsd.format(row.monthlyUsdNoVat)}</td>
-      <td>${moneyUsd.format(row.periodUsdNoVat)}</td>
-      <td>${moneyEur.format(row.periodEurNoVat)}</td>
-      <td>${moneyEur.format(row.contingencyEur)}</td>
-      <td>${moneyEur.format(row.subtotalEur)}</td>
-      <td>${moneyEur.format(row.vatEur)}</td>
-      <td>${moneyEur.format(row.totalEurWithVat)}</td>
+      <td>${formatUsdList(row)}</td>
+      <td>${formatMetricList(row, "eurKey")}</td>
+      <td>${formatMetricList(row, "contingencyKey")}</td>
+      <td>${formatMetricList(row, "noVatKey")}</td>
+      <td>${formatMetricList(row, "vatKey")}</td>
+      <td>${formatMetricList(row, "withVatKey")}</td>
     </tr>
   `).join("");
 }
@@ -179,6 +316,7 @@ function render() {
   const model = buildTcoModel(state);
   renderValidation(model.validation);
   renderSummary(model);
+  renderCharts(model);
   renderProductResults(model.productRows);
   renderTotals(model);
 }
@@ -187,6 +325,7 @@ function exportSnapshot() {
   readInputs();
   const snapshot = {
     generatedAt: new Date().toISOString(),
+    view: resultView,
     inputs: state,
     tco: buildTcoModel(state)
   };
@@ -206,8 +345,12 @@ render();
 
 form.addEventListener("input", render);
 form.addEventListener("change", render);
+for (const input of viewInputs) {
+  input.addEventListener("change", render);
+}
 resetButton.addEventListener("click", () => {
   Object.assign(state, structuredClone(DEFAULT_INPUTS));
+  document.querySelector(`input[name='resultView'][value='${RESULT_VIEWS.annual}']`).checked = true;
   writeInputs();
   render();
 });

@@ -67,8 +67,38 @@
           <section aria-labelledby="summary-title">
             <div class="section-heading">
               <h2 id="summary-title">Resumen ejecutivo</h2>
+              <div class="view-toggle" role="radiogroup" aria-label="Vista de valores">
+                <label>
+                  <input type="radio" name="resultView" value="monthly">
+                  <span>Mensual</span>
+                </label>
+                <label>
+                  <input type="radio" name="resultView" value="annual" checked>
+                  <span>Anual</span>
+                </label>
+                <label>
+                  <input type="radio" name="resultView" value="both">
+                  <span>Ambos</span>
+                </label>
+              </div>
             </div>
             <div id="kpi-strip" class="kpi-strip"></div>
+            <div class="visual-grid">
+              <article class="chart-card">
+                <div class="chart-heading">
+                  <h3>Participación por producto</h3>
+                  <span id="chart-period-label"></span>
+                </div>
+                <div id="product-chart" class="product-chart"></div>
+              </article>
+              <article class="chart-card">
+                <div class="chart-heading">
+                  <h3>Diferencia comparativa</h3>
+                  <span>Total con IVA</span>
+                </div>
+                <div id="difference-chart" class="difference-chart"></div>
+              </article>
+            </div>
             <div id="summary-grid" class="summary-grid"></div>
           </section>
 
@@ -82,9 +112,8 @@
                   <tr>
                     <th>Producto</th>
                     <th>Usuarios</th>
-                    <th>Mensual sin IVA USD</th>
-                    <th>Periodo sin IVA USD</th>
-                    <th>Periodo sin IVA EUR</th>
+                    <th>Sin IVA USD</th>
+                    <th>Sin IVA EUR</th>
                     <th>Contingencia EUR</th>
                     <th>Subtotal EUR</th>
                     <th>IVA EUR</th>

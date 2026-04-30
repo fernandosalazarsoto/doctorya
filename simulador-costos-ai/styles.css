@@ -243,7 +243,47 @@ button:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 14px;
   margin-bottom: 12px;
+}
+
+.view-toggle {
+  display: inline-grid;
+  grid-template-columns: repeat(3, minmax(82px, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(20, 35, 72, 0.08);
+}
+
+.view-toggle label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 850;
+  text-align: center;
+  cursor: pointer;
+}
+
+.view-toggle input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+}
+
+.view-toggle span {
+  display: block;
+  min-height: 32px;
+  border-radius: 6px;
+  padding: 7px 10px;
+}
+
+.view-toggle input:checked + span {
+  background: linear-gradient(135deg, var(--accent-strong), var(--brand-purple));
+  color: #fff;
 }
 
 .kpi-strip,
@@ -253,7 +293,7 @@ button:focus {
 }
 
 .kpi-strip {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   margin-bottom: 14px;
 }
 
@@ -261,8 +301,16 @@ button:focus {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.visual-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
 .kpi-strip article,
 .summary-card,
+.chart-card,
 .table-shell,
 .input-table-shell,
 .validation-panel {
@@ -270,6 +318,117 @@ button:focus {
   border-radius: 8px;
   background: var(--surface);
   box-shadow: 0 12px 30px rgba(20, 35, 72, 0.08);
+}
+
+.chart-card {
+  padding: 16px;
+}
+
+.chart-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.chart-heading h3 {
+  margin: 0;
+  color: var(--brand-navy);
+  font-size: 1rem;
+}
+
+.chart-heading span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.product-chart,
+.difference-chart,
+.compare-bars {
+  display: grid;
+  gap: 12px;
+}
+
+.bar-row,
+.compare-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.85fr) minmax(150px, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.bar-row strong,
+.compare-row span {
+  display: block;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.bar-row span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.bar-row em {
+  color: var(--brand-purple);
+  font-style: normal;
+  font-weight: 900;
+}
+
+.bar-track {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e8f0f8;
+}
+
+.bar-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--brand-purple));
+}
+
+.bar-track.alt span {
+  background: linear-gradient(90deg, var(--brand-purple), var(--brand-navy));
+}
+
+.compare-row strong {
+  color: var(--brand-navy);
+  font-size: 0.9rem;
+}
+
+.difference-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.difference-cards div {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fcff;
+}
+
+.difference-cards span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.difference-cards strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--brand-purple);
+  font-size: 1.2rem;
 }
 
 .kpi-strip article {
@@ -337,7 +496,7 @@ table {
 }
 
 .table-shell table {
-  min-width: 1120px;
+  min-width: 1040px;
 }
 
 th,
@@ -470,7 +629,8 @@ tbody tr:hover {
   .layout,
   .hero,
   .kpi-strip,
-  .summary-grid {
+  .summary-grid,
+  .visual-grid {
     grid-template-columns: 1fr;
   }
 
@@ -491,6 +651,21 @@ tbody tr:hover {
 
   .hero-actions {
     display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .section-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .view-toggle {
+    width: 100%;
+  }
+
+  .bar-row,
+  .compare-row,
+  .difference-cards {
     grid-template-columns: 1fr;
   }
 }
