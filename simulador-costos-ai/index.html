@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Simulador de costos AI</title>
+    <title>Simulador TCO AI España</title>
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
@@ -11,9 +11,9 @@
       <section class="hero" aria-labelledby="title">
         <div class="hero-copy">
           <img class="brand-logo" src="./assets/sgtech-logo.png" alt="SG Tech">
-          <p class="eyebrow">Presupuesto empresarial</p>
-          <h1 id="title">Simulador de costos AI</h1>
-          <p>Calcula el presupuesto para ChatGPT Business, Claude Team o un modelo mixto con TRM, impuestos, buffer y sensibilidad por usuarios.</p>
+          <p class="eyebrow">Compra desde España</p>
+          <h1 id="title">Simulador TCO AI</h1>
+          <p>Compara ChatGPT Business, Claude Team Standard y Claude Team Premium con precios editables, USD/EUR, IVA España, contingencia y periodo de cálculo.</p>
         </div>
         <div class="hero-actions">
           <button id="reset" type="button">Restablecer</button>
@@ -22,55 +22,42 @@
       </section>
 
       <form id="simulator-form" class="layout">
-        <aside class="panel" aria-label="Supuestos editables">
-          <h2>Supuestos</h2>
-          <fieldset>
-            <legend>Usuarios</legend>
-            <label>ChatGPT Business <input name="chatgptUsers" type="number" min="0" step="1"></label>
-            <label>Claude Standard <input name="claudeStandardUsers" type="number" min="0" step="1"></label>
-            <label>Claude Premium <input name="claudePremiumUsers" type="number" min="0" step="1"></label>
-          </fieldset>
+        <aside class="panel" aria-label="Inputs del simulador">
+          <div class="panel-heading">
+            <h2>Inputs</h2>
+            <span>Valores editables</span>
+          </div>
+
+          <div class="input-table-shell">
+            <table class="input-table">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Usuarios</th>
+                  <th>USD/mes</th>
+                </tr>
+              </thead>
+              <tbody id="product-inputs-body"></tbody>
+            </table>
+          </div>
 
           <fieldset>
-            <legend>Facturación</legend>
-            <label>ChatGPT
-              <select name="chatgptBilling">
-                <option>Anual</option>
-                <option>Mensual</option>
-              </select>
+            <legend>Parámetros financieros</legend>
+            <label>Tipo de cambio USD/EUR
+              <input name="usdEurRate" type="number" min="0.0001" step="0.01" inputmode="decimal">
             </label>
-            <label>Claude
-              <select name="claudeBilling">
-                <option>Anual</option>
-                <option>Mensual</option>
-              </select>
+            <label>IVA España (%)
+              <input name="vatRate" type="number" min="0" step="0.1" inputmode="decimal">
+            </label>
+            <label>Contingencia (%)
+              <input name="contingencyRate" type="number" min="0" step="0.1" inputmode="decimal">
+            </label>
+            <label>Periodo de cálculo en meses
+              <input name="periodMonths" type="number" min="1" step="1" inputmode="numeric">
             </label>
           </fieldset>
 
-          <fieldset>
-            <legend>Precios USD / usuario / mes</legend>
-            <label>ChatGPT anual <input name="chatgptAnnual" type="number" min="0" step="0.01"></label>
-            <label>ChatGPT mensual <input name="chatgptMonthly" type="number" min="0" step="0.01"></label>
-            <label>Claude Standard anual <input name="claudeStandardAnnual" type="number" min="0" step="0.01"></label>
-            <label>Claude Standard mensual <input name="claudeStandardMonthly" type="number" min="0" step="0.01"></label>
-            <label>Claude Premium anual <input name="claudePremiumAnnual" type="number" min="0" step="0.01"></label>
-            <label>Claude Premium mensual <input name="claudePremiumMonthly" type="number" min="0" step="0.01"></label>
-          </fieldset>
-
-          <fieldset>
-            <legend>Ajustes financieros</legend>
-            <label>TRM COP / USD <input name="trmCopUsd" type="number" min="0" step="1"></label>
-            <label>Impuestos / IVA % <input name="taxRate" type="number" min="0" step="0.1"></label>
-            <label>Contingencia / buffer % <input name="bufferRate" type="number" min="0" step="0.1"></label>
-          </fieldset>
-
-          <fieldset>
-            <legend>Mix para sensibilidad</legend>
-            <label>ChatGPT % <input name="mixChatgpt" type="number" min="0" max="100" step="1"></label>
-            <label>Claude Standard % <input name="mixClaudeStandard" type="number" min="0" max="100" step="1"></label>
-            <label>Claude Premium % <input name="mixClaudePremium" type="number" min="0" max="100" step="1"></label>
-            <p id="mix-warning" class="notice"></p>
-          </fieldset>
+          <div id="validation-panel" class="validation-panel" hidden></div>
         </aside>
 
         <section class="workspace">
@@ -78,74 +65,31 @@
             <div class="section-heading">
               <h2 id="summary-title">Resumen ejecutivo</h2>
             </div>
-            <div id="summary-cards" class="summary-grid"></div>
-            <div id="recommendation" class="recommendation"></div>
+            <div id="kpi-strip" class="kpi-strip"></div>
+            <div id="summary-grid" class="summary-grid"></div>
           </section>
 
-          <section aria-labelledby="free-title" class="free-scenario">
+          <section aria-labelledby="details-title">
             <div class="section-heading">
-              <h2 id="free-title">Escenario libre</h2>
-            </div>
-            <div class="free-grid">
-              <label>ChatGPT <input data-free="chatgptUsers" type="number" min="0" step="1"></label>
-              <label>Claude Standard <input data-free="claudeStandardUsers" type="number" min="0" step="1"></label>
-              <label>Claude Premium <input data-free="claudePremiumUsers" type="number" min="0" step="1"></label>
-              <label>Fact. ChatGPT
-                <select data-free="chatgptBilling">
-                  <option>Anual</option>
-                  <option>Mensual</option>
-                </select>
-              </label>
-              <label>Fact. Claude
-                <select data-free="claudeBilling">
-                  <option>Anual</option>
-                  <option>Mensual</option>
-                </select>
-              </label>
-            </div>
-          </section>
-
-          <section aria-labelledby="scenarios-title">
-            <div class="section-heading">
-              <h2 id="scenarios-title">Escenarios</h2>
+              <h2 id="details-title">Detalle TCO por producto</h2>
             </div>
             <div class="table-shell">
               <table>
                 <thead>
                   <tr>
-                    <th>Escenario</th>
-                    <th>GPT</th>
-                    <th>Std</th>
-                    <th>Premium</th>
-                    <th>Mensual USD</th>
-                    <th>Anual USD</th>
-                    <th>Anual COP</th>
-                  </tr>
-                </thead>
-                <tbody id="scenario-body"></tbody>
-              </table>
-            </div>
-          </section>
-
-          <section aria-labelledby="sensitivity-title">
-            <div class="section-heading">
-              <h2 id="sensitivity-title">Sensibilidad</h2>
-            </div>
-            <div class="table-shell">
-              <table>
-                <thead>
-                  <tr>
+                    <th>Producto</th>
                     <th>Usuarios</th>
-                    <th>Solo GPT USD</th>
-                    <th>Solo Claude Std USD</th>
-                    <th>Mixto USD</th>
-                    <th>GPT mix</th>
-                    <th>Std mix</th>
-                    <th>Premium mix</th>
-                    <th>Dif. vs GPT</th>
+                    <th>Mensual sin IVA USD</th>
+                    <th>Periodo sin IVA USD</th>
+                    <th>Periodo sin IVA EUR</th>
+                    <th>Contingencia EUR</th>
+                    <th>Subtotal EUR</th>
+                    <th>IVA EUR</th>
+                    <th>Total con IVA EUR</th>
                   </tr>
                 </thead>
-                <tbody id="sensitivity-body"></tbody>
+                <tbody id="product-results-body"></tbody>
+                <tbody id="totals-body" class="totals-body"></tbody>
               </table>
             </div>
           </section>

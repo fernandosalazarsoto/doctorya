@@ -1,41 +1,56 @@
 import assert from "node:assert/strict";
 import {
   DEFAULT_INPUTS,
-  buildExecutiveSummary,
-  buildScenarios,
-  buildSensitivity
+  PRODUCT_KEYS,
+  buildTcoModel
 } from "../src/calculator.js";
 
 const inputs = structuredClone(DEFAULT_INPUTS);
-const summary = buildExecutiveSummary(inputs);
-const scenarios = buildScenarios(inputs, {
-  chatgptUsers: 25,
-  claudeStandardUsers: 5,
-  claudePremiumUsers: 2,
-  chatgptBilling: "Anual",
-  claudeBilling: "Anual"
-});
-const sensitivity = buildSensitivity(inputs);
+const model = buildTcoModel(inputs);
 
-assert.equal(summary.rows[0].monthlyUsd, 600);
-assert.equal(summary.rows[0].annualUsd, 7200);
-assert.equal(summary.rows[1].monthlyUsd, 300);
-assert.equal(summary.rows[1].annualUsd, 3600);
-assert.equal(summary.rows[2].monthlyUsd, 900);
-assert.equal(summary.rows[2].annualUsd, 10800);
-assert.equal(summary.metrics.incrementalAnnualUsd, 3600);
-assert.equal(summary.metrics.increaseVsChatgpt, 0.5);
-assert.equal(Math.round(summary.metrics.averageMonthlyPerUser * 100) / 100, 24.32);
+const chatgpt = model.productRows.find((row) => row.key === PRODUCT_KEYS.chatgptBusiness);
+const claudeStandard = model.productRows.find((row) => row.key === PRODUCT_KEYS.claudeStandard);
+const claudePremium = model.productRows.find((row) => row.key === PRODUCT_KEYS.claudePremium);
 
-assert.equal(scenarios[1].name, "Solo ChatGPT para todos");
-assert.equal(scenarios[1].monthlyUsd, 740);
-assert.equal(scenarios[1].annualUsd, 8880);
-assert.equal(scenarios[5].monthlyUsd, 800);
-assert.equal(scenarios[5].annualUsd, 9600);
+assert.equal(chatgpt.monthlyUsdNoVat, 400);
+assert.equal(chatgpt.periodUsdNoVat, 4800);
+assert.equal(chatgpt.periodEurNoVat, 4464);
+assert.equal(chatgpt.vatEur, 937.44);
+assert.equal(chatgpt.totalEurWithVat, 5401.44);
 
-const users15 = sensitivity.rows.find((row) => row.totalUsers === 15);
-assert.equal(users15.mixedAnnualUsd, 4560);
-assert.equal(users15.differenceVsChatgpt, 960);
-assert.equal(sensitivity.mixTotal, 1);
+assert.equal(claudeStandard.monthlyUsdNoVat, 100);
+assert.equal(claudeStandard.periodUsdNoVat, 1200);
+assert.equal(claudeStandard.totalEurWithVat, 1350.36);
 
-console.log("Pruebas de cálculo OK");
+assert.equal(claudePremium.monthlyUsdNoVat, 200);
+assert.equal(claudePremium.periodUsdNoVat, 2400);
+assert.equal(claudePremium.totalEurWithVat, 2700.72);
+
+assert.equal(model.claudeTotal.users, 7);
+assert.equal(model.claudeTotal.totalEurWithVat, 4051.08);
+assert.equal(model.globalTotal.users, 27);
+assert.equal(model.globalTotal.subtotalEur, 7812);
+assert.equal(model.globalTotal.totalEurWithVat, 9452.52);
+assert.equal(model.summary.costDifferenceEur, -1350.36);
+assert.equal(model.summary.topProductName, "ChatGPT Business");
+
+const withAdjustments = structuredClone(DEFAULT_INPUTS);
+withAdjustments.contingencyRate = 0.1;
+withAdjustments.vatRate = 0.21;
+const adjusted = buildTcoModel(withAdjustments);
+assert.equal(adjusted.globalTotal.contingencyEur, 781.2);
+assert.equal(adjusted.globalTotal.subtotalEur, 8593.2);
+assert.equal(adjusted.globalTotal.totalEurWithVat, 10397.77);
+
+const changedClaude = structuredClone(DEFAULT_INPUTS);
+changedClaude.products[PRODUCT_KEYS.claudeStandard].users = 8;
+changedClaude.products[PRODUCT_KEYS.claudePremium].users = 3;
+const changed = buildTcoModel(changedClaude);
+assert.equal(changed.claudeTotal.users, 11);
+assert.equal(changed.globalTotal.users, 31);
+
+const invalidRate = structuredClone(DEFAULT_INPUTS);
+invalidRate.usdEurRate = 0;
+assert.equal(buildTcoModel(invalidRate).validation.isValid, false);
+
+console.log("Pruebas de calculo TCO OK");

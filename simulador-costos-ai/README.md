@@ -1,16 +1,16 @@
-# Simulador de costos AI
+# Simulador TCO AI España
 
-Aplicación web estática para simular presupuesto de ChatGPT Business y Claude Team con base en el Excel original.
+Aplicación web estática para simular el TCO de compra desde España comparando ChatGPT Business, Claude Team Standard y Claude Team Premium.
 
 ## Qué calcula
 
-- Costos mensuales y anuales en USD y COP.
-- Escenario solo ChatGPT Business.
-- Escenario solo Claude Team.
-- Modelo mixto recomendado.
-- Escenarios alternativos y escenario libre.
-- Sensibilidad por número total de usuarios.
-- Impuestos, buffer y TRM editables.
+- Usuarios independientes por producto.
+- Precios mensuales editables en USD.
+- Tipo de cambio USD/EUR editable.
+- IVA España y contingencia como porcentajes.
+- Periodo de cálculo editable, con 12 meses por defecto.
+- TCO sin IVA, TCO con IVA y desglose por producto.
+- Total Claude Team separado de Claude Standard y Claude Premium.
 
 ## Comandos
 

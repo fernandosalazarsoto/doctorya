@@ -1,30 +1,49 @@
-export const BILLING = {
-  annual: "Anual",
-  monthly: "Mensual"
+export const PRODUCT_KEYS = {
+  chatgptBusiness: "chatgptBusiness",
+  claudeStandard: "claudeStandard",
+  claudePremium: "claudePremium"
 };
 
-export const DEFAULT_INPUTS = {
-  chatgptUsers: 30,
-  claudeStandardUsers: 5,
-  claudePremiumUsers: 2,
-  chatgptBilling: BILLING.annual,
-  claudeBilling: BILLING.annual,
-  prices: {
-    chatgptAnnual: 20,
-    chatgptMonthly: 25,
-    claudeStandardAnnual: 20,
-    claudeStandardMonthly: 25,
-    claudePremiumAnnual: 100,
-    claudePremiumMonthly: 125
+export const PRODUCT_DEFINITIONS = [
+  {
+    key: PRODUCT_KEYS.chatgptBusiness,
+    name: "ChatGPT Business",
+    shortName: "ChatGPT Business",
+    group: "ChatGPT"
   },
-  trmCopUsd: 4000,
-  taxRate: 0,
-  bufferRate: 0,
-  mix: {
-    chatgpt: 0.8,
-    claudeStandard: 0.15,
-    claudePremium: 0.05
+  {
+    key: PRODUCT_KEYS.claudeStandard,
+    name: "Claude Team Standard",
+    shortName: "Claude Standard",
+    group: "Claude Team"
+  },
+  {
+    key: PRODUCT_KEYS.claudePremium,
+    name: "Claude Team Premium",
+    shortName: "Claude Premium",
+    group: "Claude Team"
   }
+];
+
+export const DEFAULT_INPUTS = {
+  products: {
+    [PRODUCT_KEYS.chatgptBusiness]: {
+      users: 20,
+      monthlyPriceUsd: 20
+    },
+    [PRODUCT_KEYS.claudeStandard]: {
+      users: 5,
+      monthlyPriceUsd: 20
+    },
+    [PRODUCT_KEYS.claudePremium]: {
+      users: 2,
+      monthlyPriceUsd: 100
+    }
+  },
+  usdEurRate: 0.93,
+  vatRate: 0.21,
+  contingencyRate: 0,
+  periodMonths: 12
 };
 
 export function normalizePercent(value) {
@@ -33,205 +52,150 @@ export function normalizePercent(value) {
   return numeric > 1 ? numeric / 100 : numeric;
 }
 
+export function sanitizeNonNegative(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric < 0) return 0;
+  return numeric;
+}
+
+export function sanitizePositive(value, fallback = 0) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return fallback;
+  return numeric;
+}
+
 export function roundCurrency(value) {
   return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 }
 
-export function getApplicablePrices(inputs) {
-  const chatgpt = inputs.chatgptBilling === BILLING.annual
-    ? inputs.prices.chatgptAnnual
-    : inputs.prices.chatgptMonthly;
-  const claudeStandard = inputs.claudeBilling === BILLING.annual
-    ? inputs.prices.claudeStandardAnnual
-    : inputs.prices.claudeStandardMonthly;
-  const claudePremium = inputs.claudeBilling === BILLING.annual
-    ? inputs.prices.claudePremiumAnnual
-    : inputs.prices.claudePremiumMonthly;
+export function calculateProductTco(inputs, productDefinition) {
+  const product = inputs.products[productDefinition.key] ?? {};
+  const users = sanitizeNonNegative(product.users);
+  const monthlyPriceUsd = sanitizeNonNegative(product.monthlyPriceUsd);
+  const periodMonths = sanitizePositive(inputs.periodMonths, 0);
+  const usdEurRate = sanitizePositive(inputs.usdEurRate, 0);
+  const vatRate = normalizePercent(inputs.vatRate);
+  const contingencyRate = normalizePercent(inputs.contingencyRate);
 
-  return { chatgpt, claudeStandard, claudePremium };
-}
-
-export function calculateScenario(inputs, scenario) {
-  const prices = getApplicablePrices({
-    ...inputs,
-    chatgptBilling: scenario.chatgptBilling ?? inputs.chatgptBilling,
-    claudeBilling: scenario.claudeBilling ?? inputs.claudeBilling
-  });
-  const tax = normalizePercent(inputs.taxRate);
-  const buffer = normalizePercent(inputs.bufferRate);
-  const multiplier = (1 + tax) * (1 + buffer);
-  const chatgptUsers = Number(scenario.chatgptUsers) || 0;
-  const claudeStandardUsers = Number(scenario.claudeStandardUsers) || 0;
-  const claudePremiumUsers = Number(scenario.claudePremiumUsers) || 0;
-  const users = chatgptUsers + claudeStandardUsers + claudePremiumUsers;
-  const monthlyUsd = roundCurrency(
-    (
-      chatgptUsers * prices.chatgpt
-      + claudeStandardUsers * prices.claudeStandard
-      + claudePremiumUsers * prices.claudePremium
-    ) * multiplier
-  );
-  const annualUsd = roundCurrency(monthlyUsd * 12);
-  const monthlyCop = roundCurrency(monthlyUsd * inputs.trmCopUsd);
-  const annualCop = roundCurrency(annualUsd * inputs.trmCopUsd);
+  const monthlyUsdNoVat = roundCurrency(users * monthlyPriceUsd);
+  const periodUsdNoVat = roundCurrency(monthlyUsdNoVat * periodMonths);
+  const periodEurNoVat = roundCurrency(periodUsdNoVat * usdEurRate);
+  const contingencyEur = roundCurrency(periodEurNoVat * contingencyRate);
+  const subtotalEur = roundCurrency(periodEurNoVat + contingencyEur);
+  const vatEur = roundCurrency(subtotalEur * vatRate);
+  const totalEurWithVat = roundCurrency(subtotalEur + vatEur);
 
   return {
-    ...scenario,
+    ...productDefinition,
     users,
-    monthlyUsd,
-    annualUsd,
-    monthlyCop,
-    annualCop
+    monthlyPriceUsd,
+    monthlyUsdNoVat,
+    periodUsdNoVat,
+    periodEurNoVat,
+    contingencyEur,
+    subtotalEur,
+    vatEur,
+    totalEurWithVat
   };
 }
 
-export function buildExecutiveSummary(inputs) {
-  const chatgptOnly = calculateScenario(inputs, {
-    id: "chatgpt",
-    name: "Solo ChatGPT Business",
-    chatgptUsers: inputs.chatgptUsers,
-    claudeStandardUsers: 0,
-    claudePremiumUsers: 0,
-    note: "Base corporativa: PMO, preventa, dirección y documentación."
-  });
-  const claudeOnly = calculateScenario(inputs, {
-    id: "claude",
-    name: "Solo Claude Team",
-    chatgptUsers: 0,
-    claudeStandardUsers: inputs.claudeStandardUsers,
-    claudePremiumUsers: inputs.claudePremiumUsers,
-    note: "Técnico: coding, agentes, automatización y análisis documental."
-  });
-  const mixed = calculateScenario(inputs, {
-    id: "mixed",
-    name: "Modelo mixto SG Tech",
-    chatgptUsers: inputs.chatgptUsers,
-    claudeStandardUsers: inputs.claudeStandardUsers,
-    claudePremiumUsers: inputs.claudePremiumUsers,
-    note: "Recomendado: ChatGPT Business como base + Claude Team técnico selectivo."
-  });
+export function sumRows(rows, key, name, shortName = name) {
+  return rows.reduce(
+    (total, row) => ({
+      ...total,
+      users: total.users + row.users,
+      monthlyUsdNoVat: roundCurrency(total.monthlyUsdNoVat + row.monthlyUsdNoVat),
+      periodUsdNoVat: roundCurrency(total.periodUsdNoVat + row.periodUsdNoVat),
+      periodEurNoVat: roundCurrency(total.periodEurNoVat + row.periodEurNoVat),
+      contingencyEur: roundCurrency(total.contingencyEur + row.contingencyEur),
+      subtotalEur: roundCurrency(total.subtotalEur + row.subtotalEur),
+      vatEur: roundCurrency(total.vatEur + row.vatEur),
+      totalEurWithVat: roundCurrency(total.totalEurWithVat + row.totalEurWithVat)
+    }),
+    {
+      key,
+      name,
+      shortName,
+      group: "Total",
+      users: 0,
+      monthlyPriceUsd: null,
+      monthlyUsdNoVat: 0,
+      periodUsdNoVat: 0,
+      periodEurNoVat: 0,
+      contingencyEur: 0,
+      subtotalEur: 0,
+      vatEur: 0,
+      totalEurWithVat: 0
+    }
+  );
+}
 
-  const incrementalAnnualUsd = roundCurrency(mixed.annualUsd - chatgptOnly.annualUsd);
-  const increaseVsChatgpt = chatgptOnly.annualUsd === 0
+export function buildTcoModel(inputs) {
+  const productRows = PRODUCT_DEFINITIONS.map((definition) => calculateProductTco(inputs, definition));
+  const chatgpt = productRows.find((row) => row.key === PRODUCT_KEYS.chatgptBusiness);
+  const claudeProducts = productRows.filter((row) => row.group === "Claude Team");
+  const claudeTotal = sumRows(claudeProducts, "claudeTeamTotal", "Total Claude Team");
+  const globalTotal = sumRows(productRows, "globalTotal", "Total global");
+  const costDifferenceEur = roundCurrency(claudeTotal.totalEurWithVat - chatgpt.totalEurWithVat);
+  const topProduct = productRows.reduce((winner, row) => (
+    row.totalEurWithVat > winner.totalEurWithVat ? row : winner
+  ), productRows[0]);
+  const topProductShare = globalTotal.totalEurWithVat === 0
     ? 0
-    : incrementalAnnualUsd / chatgptOnly.annualUsd;
-  const averageMonthlyPerUser = mixed.users === 0 ? 0 : mixed.monthlyUsd / mixed.users;
-  const recommendation = getRecommendation(inputs, increaseVsChatgpt);
+    : topProduct.totalEurWithVat / globalTotal.totalEurWithVat;
+  const validation = validateInputs(inputs);
 
   return {
-    rows: [
-      { ...chatgptOnly, incrementalAnnualUsd: 0 },
-      { ...claudeOnly, incrementalAnnualUsd: roundCurrency(claudeOnly.annualUsd - chatgptOnly.annualUsd) },
-      { ...mixed, incrementalAnnualUsd }
-    ],
-    metrics: {
-      annualMixedUsd: mixed.annualUsd,
-      incrementalAnnualUsd,
-      increaseVsChatgpt,
-      averageMonthlyPerUser,
-      recommendation
-    }
+    productRows,
+    claudeTotal,
+    globalTotal,
+    summary: {
+      chatgptUsers: chatgpt.users,
+      claudeStandardUsers: inputs.products[PRODUCT_KEYS.claudeStandard]?.users ?? 0,
+      claudePremiumUsers: inputs.products[PRODUCT_KEYS.claudePremium]?.users ?? 0,
+      claudeTeamUsers: claudeTotal.users,
+      globalUsers: globalTotal.users,
+      tcoNoVatEur: globalTotal.subtotalEur,
+      tcoWithVatEur: globalTotal.totalEurWithVat,
+      costDifferenceEur,
+      costDifferenceLabel: costDifferenceEur >= 0
+        ? "Claude Team cuesta mas que ChatGPT Business"
+        : "ChatGPT Business cuesta mas que Claude Team",
+      topProductName: topProduct.name,
+      topProductShare
+    },
+    validation
   };
 }
 
-export function getRecommendation(inputs, increaseVsChatgpt) {
-  const claudeUsers = Number(inputs.claudeStandardUsers) + Number(inputs.claudePremiumUsers);
-  if (claudeUsers === 0) {
-    return "Sin usuarios Claude: escenario base ChatGPT Business. Adecuado para productividad transversal, pero no valida capacidad técnica avanzada.";
-  }
+export function validateInputs(inputs) {
+  const errors = [];
 
-  if (increaseVsChatgpt > 0.5) {
-    return "El componente Claude incrementa el costo anual más de 50% vs ChatGPT. Limitar Premium a perfiles técnicos con uso demostrable.";
-  }
-
-  return "Modelo mixto razonable: ChatGPT Business cubre productividad corporativa y Claude Team se reserva para ingeniería, IA y automatización.";
-}
-
-export function buildScenarios(inputs, freeScenario) {
-  const totalUsers = Number(inputs.chatgptUsers) + Number(inputs.claudeStandardUsers) + Number(inputs.claudePremiumUsers);
-  const scenarios = [
-    {
-      name: "Base desde Inputs",
-      chatgptUsers: inputs.chatgptUsers,
-      claudeStandardUsers: inputs.claudeStandardUsers,
-      claudePremiumUsers: inputs.claudePremiumUsers,
-      note: "Escenario principal de SG Tech."
-    },
-    {
-      name: "Solo ChatGPT para todos",
-      chatgptUsers: totalUsers,
-      claudeStandardUsers: 0,
-      claudePremiumUsers: 0,
-      note: "Útil si se prioriza productividad corporativa y bajo costo."
-    },
-    {
-      name: "Solo Claude Standard para todos",
-      chatgptUsers: 0,
-      claudeStandardUsers: totalUsers,
-      claudePremiumUsers: 0,
-      note: "Útil solo si todos los usuarios son técnicos."
-    },
-    {
-      name: "Mixto conservador",
-      chatgptUsers: 20,
-      claudeStandardUsers: 5,
-      claudePremiumUsers: 1,
-      note: "Célula técnica pequeña con un Premium."
-    },
-    {
-      name: "Mixto técnico intensivo",
-      chatgptUsers: 30,
-      claudeStandardUsers: 6,
-      claudePremiumUsers: 4,
-      note: "Más Premium: revisar si el uso técnico lo justifica."
-    },
-    {
-      name: "Escenario libre",
-      chatgptUsers: freeScenario.chatgptUsers,
-      claudeStandardUsers: freeScenario.claudeStandardUsers,
-      claudePremiumUsers: freeScenario.claudePremiumUsers,
-      chatgptBilling: freeScenario.chatgptBilling,
-      claudeBilling: freeScenario.claudeBilling,
-      note: "Fila editable para simular una propuesta específica."
+  for (const definition of PRODUCT_DEFINITIONS) {
+    const product = inputs.products[definition.key] ?? {};
+    if (Number(product.users) < 0) {
+      errors.push(`${definition.name}: usuarios no puede ser negativo.`);
     }
-  ];
-
-  return scenarios.map((scenario) => calculateScenario(inputs, scenario));
-}
-
-export function buildSensitivity(inputs, min = 5, max = 100, step = 5) {
-  const rows = [];
-  const prices = getApplicablePrices(inputs);
-  const tax = normalizePercent(inputs.taxRate);
-  const buffer = normalizePercent(inputs.bufferRate);
-  const multiplier = (1 + tax) * (1 + buffer);
-  const mixTotal = inputs.mix.chatgpt + inputs.mix.claudeStandard + inputs.mix.claudePremium;
-
-  for (let totalUsers = min; totalUsers <= max; totalUsers += step) {
-    const chatgptUsers = Math.round(totalUsers * inputs.mix.chatgpt);
-    const claudeStandardUsers = Math.round(totalUsers * inputs.mix.claudeStandard);
-    const claudePremiumUsers = Math.max(0, totalUsers - chatgptUsers - claudeStandardUsers);
-    const chatgptAnnualUsd = roundCurrency(totalUsers * prices.chatgpt * 12 * multiplier);
-    const claudeStandardAnnualUsd = roundCurrency(totalUsers * prices.claudeStandard * 12 * multiplier);
-    const mixedAnnualUsd = roundCurrency(
-      (
-        chatgptUsers * prices.chatgpt * 12
-        + claudeStandardUsers * prices.claudeStandard * 12
-        + claudePremiumUsers * prices.claudePremium * 12
-      ) * multiplier
-    );
-
-    rows.push({
-      totalUsers,
-      chatgptAnnualUsd,
-      claudeStandardAnnualUsd,
-      mixedAnnualUsd,
-      chatgptUsers,
-      claudeStandardUsers,
-      claudePremiumUsers,
-      differenceVsChatgpt: roundCurrency(mixedAnnualUsd - chatgptAnnualUsd)
-    });
+    if (Number(product.monthlyPriceUsd) < 0) {
+      errors.push(`${definition.name}: precio mensual no puede ser negativo.`);
+    }
   }
 
-  return { rows, mixTotal };
+  if (!Number.isFinite(Number(inputs.usdEurRate)) || Number(inputs.usdEurRate) <= 0) {
+    errors.push("El tipo de cambio USD/EUR debe ser mayor que cero.");
+  }
+  if (Number(inputs.vatRate) < 0) {
+    errors.push("El IVA no puede ser negativo.");
+  }
+  if (Number(inputs.contingencyRate) < 0) {
+    errors.push("La contingencia no puede ser negativa.");
+  }
+  if (!Number.isFinite(Number(inputs.periodMonths)) || Number(inputs.periodMonths) <= 0) {
+    errors.push("El periodo de calculo debe ser mayor que cero.");
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
 }
