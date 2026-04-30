@@ -1,0 +1,12 @@
+{
+  "name": "simulador-costos-ai",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node tests/calculator.test.mjs",
+    "dev": "npx serve dist"
+  },
+  "devDependencies": {}
+}
