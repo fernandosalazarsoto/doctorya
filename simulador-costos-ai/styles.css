@@ -31,7 +31,7 @@ body {
 }
 
 main {
-  width: min(1480px, 100%);
+  width: min(1240px, 100%);
   margin: 0 auto;
   padding: 24px;
 }
@@ -137,8 +137,8 @@ button:first-child {
 
 .layout {
   display: grid;
-  grid-template-columns: 430px minmax(0, 1fr);
-  gap: 24px;
+  grid-template-columns: minmax(320px, 360px) minmax(0, 1fr);
+  gap: 18px;
   margin-top: 26px;
 }
 
@@ -310,17 +310,17 @@ button:focus {
 }
 
 .kpi-strip {
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-bottom: 14px;
 }
 
 .summary-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .visual-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   margin-bottom: 14px;
 }
@@ -601,7 +601,7 @@ thead th:first-child {
 .input-table a {
   display: inline-block;
   color: var(--accent-strong);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 850;
   line-height: 1.25;
   text-decoration: none;
@@ -665,6 +665,12 @@ tbody tr:hover {
   .panel {
     position: static;
     max-height: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .layout {
+    grid-template-columns: 360px minmax(0, 1fr);
   }
 }
 
