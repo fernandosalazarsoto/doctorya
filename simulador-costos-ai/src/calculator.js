@@ -1,3 +1,5 @@
+import { PRICE_CATALOG } from "./priceSources.js";
+
 export const PRODUCT_KEYS = {
   chatgptBusiness: "chatgptBusiness",
   claudeStandard: "claudeStandard",
@@ -28,16 +30,13 @@ export const PRODUCT_DEFINITIONS = [
 export const DEFAULT_INPUTS = {
   products: {
     [PRODUCT_KEYS.chatgptBusiness]: {
-      users: 20,
-      monthlyPriceUsd: 20
+      users: 20
     },
     [PRODUCT_KEYS.claudeStandard]: {
-      users: 5,
-      monthlyPriceUsd: 20
+      users: 5
     },
     [PRODUCT_KEYS.claudePremium]: {
-      users: 2,
-      monthlyPriceUsd: 100
+      users: 2
     }
   },
   usdEurRate: 0.93,
@@ -70,8 +69,9 @@ export function roundCurrency(value) {
 
 export function calculateProductTco(inputs, productDefinition) {
   const product = inputs.products[productDefinition.key] ?? {};
+  const priceSource = PRICE_CATALOG[productDefinition.key];
   const users = sanitizeNonNegative(product.users);
-  const monthlyPriceUsd = sanitizeNonNegative(product.monthlyPriceUsd);
+  const monthlyPriceUsd = sanitizeNonNegative(priceSource?.monthlyPriceUsd);
   const periodMonths = sanitizePositive(inputs.periodMonths, 0);
   const usdEurRate = sanitizePositive(inputs.usdEurRate, 0);
   const vatRate = normalizePercent(inputs.vatRate);
@@ -89,6 +89,7 @@ export function calculateProductTco(inputs, productDefinition) {
     ...productDefinition,
     users,
     monthlyPriceUsd,
+    priceSource,
     monthlyUsdNoVat,
     periodUsdNoVat,
     periodEurNoVat,
@@ -175,9 +176,6 @@ export function validateInputs(inputs) {
     const product = inputs.products[definition.key] ?? {};
     if (Number(product.users) < 0) {
       errors.push(`${definition.name}: usuarios no puede ser negativo.`);
-    }
-    if (Number(product.monthlyPriceUsd) < 0) {
-      errors.push(`${definition.name}: precio mensual no puede ser negativo.`);
     }
   }
 

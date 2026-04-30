@@ -5,6 +5,7 @@ import {
   normalizePercent,
   sanitizeNonNegative
 } from "./calculator.js";
+import { PRICE_CATALOG, PRICE_SOURCE_CAPTURED_AT } from "./priceSources.js";
 
 const state = structuredClone(DEFAULT_INPUTS);
 
@@ -15,6 +16,7 @@ const kpiStrip = document.querySelector("#kpi-strip");
 const productResultsBody = document.querySelector("#product-results-body");
 const totalsBody = document.querySelector("#totals-body");
 const validationPanel = document.querySelector("#validation-panel");
+const sourceDate = document.querySelector("#source-date");
 const resetButton = document.querySelector("#reset");
 const exportButton = document.querySelector("#export-json");
 
@@ -46,7 +48,6 @@ function writeInputs() {
   for (const product of PRODUCT_DEFINITIONS) {
     const data = state.products[product.key];
     form.elements[`${product.key}Users`].value = data.users;
-    form.elements[`${product.key}Price`].value = data.monthlyPriceUsd;
   }
 
   form.elements.usdEurRate.value = state.usdEurRate;
@@ -58,7 +59,6 @@ function writeInputs() {
 function readInputs() {
   for (const product of PRODUCT_DEFINITIONS) {
     state.products[product.key].users = readNumber(`${product.key}Users`);
-    state.products[product.key].monthlyPriceUsd = readNumber(`${product.key}Price`);
   }
 
   state.usdEurRate = Number(form.elements.usdEurRate.value || 0);
@@ -74,8 +74,10 @@ function renderProductInputs() {
       <td>
         <input name="${product.key}Users" type="number" min="0" step="1" inputmode="numeric" aria-label="Usuarios ${product.name}">
       </td>
+      <td>${moneyUsd.format(PRICE_CATALOG[product.key].monthlyPriceUsd)}</td>
       <td>
-        <input name="${product.key}Price" type="number" min="0" step="0.01" inputmode="decimal" aria-label="Precio mensual ${product.name}">
+        <a href="${PRICE_CATALOG[product.key].sourceUrl}" target="_blank" rel="noreferrer">${PRICE_CATALOG[product.key].sourceName}</a>
+        <span>${PRICE_CATALOG[product.key].billingBasis}</span>
       </td>
     </tr>
   `).join("");
@@ -198,6 +200,7 @@ function exportSnapshot() {
 }
 
 renderProductInputs();
+sourceDate.textContent = PRICE_SOURCE_CAPTURED_AT;
 writeInputs();
 render();
 

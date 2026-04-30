@@ -49,6 +49,12 @@ const changed = buildTcoModel(changedClaude);
 assert.equal(changed.claudeTotal.users, 11);
 assert.equal(changed.globalTotal.users, 31);
 
+const attemptedManualPrice = structuredClone(DEFAULT_INPUTS);
+attemptedManualPrice.products[PRODUCT_KEYS.claudePremium].monthlyPriceUsd = 1;
+const sourcePriced = buildTcoModel(attemptedManualPrice);
+const premium = sourcePriced.productRows.find((row) => row.key === PRODUCT_KEYS.claudePremium);
+assert.equal(premium.monthlyPriceUsd, 100);
+
 const invalidRate = structuredClone(DEFAULT_INPUTS);
 invalidRate.usdEurRate = 0;
 assert.equal(buildTcoModel(invalidRate).validation.isValid, false);

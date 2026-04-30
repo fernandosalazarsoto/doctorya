@@ -5,12 +5,14 @@ Aplicación web estática para simular el TCO de compra desde España comparando
 ## Qué calcula
 
 - Usuarios independientes por producto.
-- Precios mensuales editables en USD.
+- Tarifas mensuales en USD capturadas desde fuentes oficiales.
 - Tipo de cambio USD/EUR editable.
 - IVA España y contingencia como porcentajes.
 - Periodo de cálculo editable, con 12 meses por defecto.
 - TCO sin IVA, TCO con IVA y desglose por producto.
 - Total Claude Team separado de Claude Standard y Claude Premium.
+
+Las tarifas viven en `src/priceSources.js` con URL de fuente y fecha de captura. La interfaz no permite editar precios de licencia; solo permite editar usuarios y supuestos financieros.
 
 ## Comandos
 

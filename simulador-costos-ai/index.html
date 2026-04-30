@@ -13,7 +13,7 @@
           <img class="brand-logo" src="./assets/sgtech-logo.png" alt="SG Tech">
           <p class="eyebrow">Compra desde España</p>
           <h1 id="title">Simulador TCO AI</h1>
-          <p>Compara ChatGPT Business, Claude Team Standard y Claude Team Premium con precios editables, USD/EUR, IVA España, contingencia y periodo de cálculo.</p>
+          <p>Compara ChatGPT Business, Claude Team Standard y Claude Team Premium con tarifas capturadas de fuentes oficiales, USD/EUR, IVA España, contingencia y periodo de cálculo.</p>
         </div>
         <div class="hero-actions">
           <button id="reset" type="button">Restablecer</button>
@@ -25,8 +25,10 @@
         <aside class="panel" aria-label="Inputs del simulador">
           <div class="panel-heading">
             <h2>Inputs</h2>
-            <span>Valores editables</span>
+            <span>Usuarios editables</span>
           </div>
+
+          <p class="source-note">Tarifas capturadas de fuentes oficiales el <strong id="source-date"></strong>. No son editables en el simulador.</p>
 
           <div class="input-table-shell">
             <table class="input-table">
@@ -34,7 +36,8 @@
                 <tr>
                   <th>Producto</th>
                   <th>Usuarios</th>
-                  <th>USD/mes</th>
+                  <th>Tarifa USD/mes</th>
+                  <th>Fuente</th>
                 </tr>
               </thead>
               <tbody id="product-inputs-body"></tbody>

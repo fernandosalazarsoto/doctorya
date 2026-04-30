@@ -171,6 +171,17 @@ button:first-child {
   font-weight: 800;
 }
 
+.source-note {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.source-note strong {
+  color: var(--brand-purple);
+}
+
 fieldset {
   display: grid;
   gap: 10px;
@@ -369,7 +380,7 @@ thead th:first-child {
 }
 
 .input-table tbody th {
-  width: 46%;
+  width: 32%;
   color: var(--ink);
   font-size: 0.9rem;
   line-height: 1.25;
@@ -383,12 +394,42 @@ thead th:first-child {
 
 .input-table th:nth-child(2),
 .input-table td:nth-child(2) {
-  width: 24%;
+  width: 18%;
 }
 
 .input-table th:nth-child(3),
 .input-table td:nth-child(3) {
+  width: 20%;
+  color: var(--brand-purple);
+  font-weight: 850;
+}
+
+.input-table th:nth-child(4),
+.input-table td:nth-child(4) {
   width: 30%;
+  text-align: left;
+  white-space: normal;
+}
+
+.input-table a {
+  display: inline-block;
+  color: var(--accent-strong);
+  font-size: 0.82rem;
+  font-weight: 850;
+  line-height: 1.25;
+  text-decoration: none;
+}
+
+.input-table a:hover {
+  text-decoration: underline;
+}
+
+.input-table td span {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.25;
 }
 
 tbody tr:hover {
