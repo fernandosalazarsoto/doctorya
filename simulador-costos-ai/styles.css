@@ -140,6 +140,7 @@ button:first-child {
   grid-template-columns: minmax(320px, 360px) minmax(0, 1fr);
   gap: 18px;
   margin-top: 26px;
+  max-width: 100%;
 }
 
 .panel {
@@ -242,6 +243,16 @@ button:focus {
   display: grid;
   gap: 22px;
   min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.workspace > section,
+.kpi-strip,
+.summary-grid,
+.visual-grid {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .section-heading {
@@ -331,6 +342,8 @@ button:focus {
 .table-shell,
 .input-table-shell,
 .validation-panel {
+  min-width: 0;
+  max-width: 100%;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
@@ -499,6 +512,7 @@ button:focus {
 
 .input-table-shell,
 .table-shell {
+  max-width: 100%;
   overflow-x: auto;
 }
 
