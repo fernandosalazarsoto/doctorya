@@ -16,7 +16,6 @@ const productInputsBody = document.querySelector("#product-inputs-body");
 const summaryGrid = document.querySelector("#summary-grid");
 const kpiStrip = document.querySelector("#kpi-strip");
 const productChart = document.querySelector("#product-chart");
-const differenceChart = document.querySelector("#difference-chart");
 const chartPeriodLabel = document.querySelector("#chart-period-label");
 const productResultsBody = document.querySelector("#product-results-body");
 const totalsBody = document.querySelector("#totals-body");
@@ -55,9 +54,7 @@ const VIEW_CONFIG = {
     usdKey: "monthlyUsdNoVat",
     eurKey: "monthlyEurNoVat",
     contingencyKey: "monthlyContingencyEur",
-    vatKey: "monthlyVatEur",
-    claudeDiffKey: "monthlyClaudeVsChatgptEur",
-    inverseDiffKey: "monthlyChatgptVsClaudeEur"
+    vatKey: "monthlyVatEur"
   },
   [RESULT_VIEWS.annual]: {
     label: "anual",
@@ -67,9 +64,7 @@ const VIEW_CONFIG = {
     usdKey: "annualUsdNoVat",
     eurKey: "annualEurNoVat",
     contingencyKey: "annualContingencyEur",
-    vatKey: "annualVatEur",
-    claudeDiffKey: "annualClaudeVsChatgptEur",
-    inverseDiffKey: "annualChatgptVsClaudeEur"
+    vatKey: "annualVatEur"
   }
 };
 
@@ -134,13 +129,7 @@ function renderTariffCells() {
   }
 }
 
-function signedMoney(value) {
-  const sign = value > 0 ? "+" : "";
-  return `${sign}${moneyEur.format(value)}`;
-}
-
 function buildKpis(model) {
-  const summary = model.summary;
   const cards = [];
   const appendCards = (view) => {
     const config = VIEW_CONFIG[view];
@@ -164,20 +153,7 @@ function buildKpis(model) {
     return cards.join("");
   }
 
-  const config = VIEW_CONFIG[resultView];
   appendCards(resultView);
-  cards.push(`
-    <article>
-      <span>Claude vs ChatGPT ${config.label}</span>
-      <strong>${signedMoney(summary[config.claudeDiffKey])}</strong>
-      <small>${summary.costDifferenceLabel}</small>
-    </article>
-    <article>
-      <span>ChatGPT vs Claude ${config.label}</span>
-      <strong>${signedMoney(summary[config.inverseDiffKey])}</strong>
-      <small>Lectura inversa de la misma brecha</small>
-    </article>
-  `);
 
   return cards.join("");
 }
@@ -187,10 +163,6 @@ function renderSummary(model) {
   kpiStrip.innerHTML = buildKpis(model);
 
   summaryGrid.innerHTML = `
-    <article class="summary-card">
-      <span>Total usuarios ChatGPT Business</span>
-      <strong>${summary.chatgptUsers}</strong>
-    </article>
     <article class="summary-card">
       <span>Total usuarios Claude Team Standard</span>
       <strong>${summary.claudeStandardUsers}</strong>
@@ -204,8 +176,14 @@ function renderSummary(model) {
       <strong>${summary.claudeTeamUsers}</strong>
     </article>
     <article class="summary-card">
-      <span>Total usuarios global</span>
-      <strong>${summary.globalUsers}</strong>
+      <span>TCO periodo sin IVA</span>
+      <strong>${moneyEur.format(summary.tcoNoVatEur)}</strong>
+      <small>${numberFormat.format(state.periodMonths)} meses</small>
+    </article>
+    <article class="summary-card">
+      <span>TCO periodo con IVA</span>
+      <strong>${moneyEur.format(summary.tcoWithVatEur)}</strong>
+      <small>${numberFormat.format(summary.globalUsers)} usuarios totales</small>
     </article>
     <article class="summary-card">
       <span>Mayor participacion en costo</span>
@@ -240,36 +218,6 @@ function renderCharts(model) {
       </div>
     `;
   }).join("");
-
-  const chatgpt = model.productRows.find((row) => row.key === "chatgptBusiness");
-  const claudeValue = model.claudeTotal[config.withVatKey];
-  const chatgptValue = chatgpt[config.withVatKey];
-  const maxComparison = Math.max(claudeValue, chatgptValue, 1);
-
-  differenceChart.innerHTML = `
-    <div class="compare-bars">
-      <div class="compare-row">
-        <span>Claude Team</span>
-        <div class="bar-track"><span style="width: ${(claudeValue / maxComparison) * 100}%"></span></div>
-        <strong>${moneyEur.format(claudeValue)}</strong>
-      </div>
-      <div class="compare-row">
-        <span>ChatGPT Business</span>
-        <div class="bar-track alt"><span style="width: ${(chatgptValue / maxComparison) * 100}%"></span></div>
-        <strong>${moneyEur.format(chatgptValue)}</strong>
-      </div>
-    </div>
-    <div class="difference-cards">
-      <div>
-        <span>Claude vs ChatGPT</span>
-        <strong>${signedMoney(model.summary[config.claudeDiffKey])}</strong>
-      </div>
-      <div>
-        <span>ChatGPT vs Claude</span>
-        <strong>${signedMoney(model.summary[config.inverseDiffKey])}</strong>
-      </div>
-    </div>
-  `;
 }
 
 function detailViews() {
@@ -306,7 +254,7 @@ function renderProductResults(rows) {
 }
 
 function renderTotals(model) {
-  const totals = [model.claudeTotal, model.globalTotal];
+  const totals = [model.claudeTotal];
   totalsBody.innerHTML = totals.map((row) => `
     <tr>
       <th scope="row">${row.name}</th>

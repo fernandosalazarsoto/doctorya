@@ -1,6 +1,6 @@
 # Simulador TCO AI España
 
-Aplicación web estática para simular el TCO de compra desde España comparando ChatGPT Business, Claude Team Standard y Claude Team Premium.
+Aplicación web estática para simular el TCO de compra desde España para Claude Team Standard y Claude Team Premium.
 
 ## Qué calcula
 
@@ -12,8 +12,7 @@ Aplicación web estática para simular el TCO de compra desde España comparando
 - Periodo de cálculo editable, con 12 meses por defecto.
 - TCO sin IVA, TCO con IVA y desglose por producto.
 - Vista mensual, anual o ambas en el resumen y detalle.
-- Diferencia Claude Team vs ChatGPT Business y lectura inversa.
-- Gráficos de participación por producto y comparación de costos.
+- Gráfico de participación por producto.
 - Total Claude Team separado de Claude Standard y Claude Premium.
 
 Las tarifas viven en `src/priceSources.js` con URL de fuente y fecha de captura. La interfaz no permite editar precios de licencia; solo permite editar usuarios y supuestos financieros.

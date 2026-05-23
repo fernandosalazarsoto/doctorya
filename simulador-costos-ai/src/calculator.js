@@ -1,18 +1,11 @@
 import { PRICE_CATALOG } from "./priceSources.js";
 
 export const PRODUCT_KEYS = {
-  chatgptBusiness: "chatgptBusiness",
   claudeStandard: "claudeStandard",
   claudePremium: "claudePremium"
 };
 
 export const PRODUCT_DEFINITIONS = [
-  {
-    key: PRODUCT_KEYS.chatgptBusiness,
-    name: "ChatGPT Business",
-    shortName: "ChatGPT Business",
-    group: "ChatGPT"
-  },
   {
     key: PRODUCT_KEYS.claudeStandard,
     name: "Claude Team Standard",
@@ -29,9 +22,6 @@ export const PRODUCT_DEFINITIONS = [
 
 export const DEFAULT_INPUTS = {
   products: {
-    [PRODUCT_KEYS.chatgptBusiness]: {
-      users: 20
-    },
     [PRODUCT_KEYS.claudeStandard]: {
       users: 5
     },
@@ -195,13 +185,9 @@ export function sumRows(rows, key, name, shortName = name) {
 
 export function buildTcoModel(inputs) {
   const productRows = PRODUCT_DEFINITIONS.map((definition) => calculateProductTco(inputs, definition));
-  const chatgpt = productRows.find((row) => row.key === PRODUCT_KEYS.chatgptBusiness);
   const claudeProducts = productRows.filter((row) => row.group === "Claude Team");
   const claudeTotal = sumRows(claudeProducts, "claudeTeamTotal", "Total Claude Team");
-  const globalTotal = sumRows(productRows, "globalTotal", "Total global");
-  const monthlyClaudeVsChatgptEur = roundCurrency(claudeTotal.monthlyTotalEurWithVat - chatgpt.monthlyTotalEurWithVat);
-  const annualClaudeVsChatgptEur = roundCurrency(claudeTotal.annualTotalEurWithVat - chatgpt.annualTotalEurWithVat);
-  const periodClaudeVsChatgptEur = roundCurrency(claudeTotal.totalEurWithVat - chatgpt.totalEurWithVat);
+  const globalTotal = sumRows(productRows, "globalTotal", "Total Claude Team");
   const topProduct = productRows.reduce((winner, row) => (
     row.totalEurWithVat > winner.totalEurWithVat ? row : winner
   ), productRows[0]);
@@ -215,7 +201,6 @@ export function buildTcoModel(inputs) {
     claudeTotal,
     globalTotal,
     summary: {
-      chatgptUsers: chatgpt.users,
       claudeStandardUsers: inputs.products[PRODUCT_KEYS.claudeStandard]?.users ?? 0,
       claudePremiumUsers: inputs.products[PRODUCT_KEYS.claudePremium]?.users ?? 0,
       claudeTeamUsers: claudeTotal.users,
@@ -226,15 +211,6 @@ export function buildTcoModel(inputs) {
       annualTcoWithVatEur: globalTotal.annualTotalEurWithVat,
       tcoNoVatEur: globalTotal.subtotalEur,
       tcoWithVatEur: globalTotal.totalEurWithVat,
-      monthlyClaudeVsChatgptEur,
-      monthlyChatgptVsClaudeEur: roundCurrency(-monthlyClaudeVsChatgptEur),
-      annualClaudeVsChatgptEur,
-      annualChatgptVsClaudeEur: roundCurrency(-annualClaudeVsChatgptEur),
-      costDifferenceEur: periodClaudeVsChatgptEur,
-      inverseCostDifferenceEur: roundCurrency(-periodClaudeVsChatgptEur),
-      costDifferenceLabel: periodClaudeVsChatgptEur >= 0
-        ? "Claude Team cuesta mas que ChatGPT Business"
-        : "ChatGPT Business cuesta mas que Claude Team",
       topProductName: topProduct.name,
       topProductShare
     },
